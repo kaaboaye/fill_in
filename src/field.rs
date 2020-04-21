@@ -8,7 +8,7 @@ pub struct Field {
 }
 
 impl Field {
-  pub fn new() -> Field {
+  pub fn new_empty() -> Field {
     Field {
       data: 0b10000000000000000000000000000000,
     }
@@ -67,6 +67,21 @@ impl Field {
   }
 }
 
+impl From<char> for Field {
+  fn from(character: char) -> Self {
+    match character {
+      '_' => Field::new_any_character(),
+      '#' => Field::new_blocker(),
+      character => {
+        let mut field = Field::new_empty();
+        field.insert(character);
+
+        field
+      }
+    }
+  }
+}
+
 pub struct FieldIter {
   field: Field,
 }
@@ -96,16 +111,15 @@ impl IntoIterator for Field {
 
 impl Debug for Field {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-    if self.len() == -1 {
-      return write!(f, "#");
-    }
-
-    let values: Vec<_> = self.iter().collect();
-
-    if values.len() == 1 {
-      write!(f, "{}", values[0])
-    } else {
-      write!(f, "{:?}", &values)
+    match self.len() {
+      -1 => write!(f, "#"),
+      0 => write!(f, "∅"),
+      1 => write!(f, "{}", self.next()),
+      26 => write!(f, "_"),
+      _ => {
+        let values: Vec<_> = self.iter().collect();
+        write!(f, "{:?}", &values)
+      }
     }
   }
 }
@@ -144,7 +158,7 @@ mod tests {
 
   #[test]
   fn len_empty() {
-    let field = Field::new();
+    let field = Field::new_empty();
     assert_eq!(field.len(), 0);
   }
 
@@ -162,7 +176,7 @@ mod tests {
 
   #[test]
   fn simple_insert() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('D');
 
     assert_eq!(field.len(), 1);
@@ -170,7 +184,7 @@ mod tests {
 
   #[test]
   fn multiple_inserts_of_the_same_character() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('D');
     field.insert('D');
     field.insert('D');
@@ -180,7 +194,7 @@ mod tests {
 
   #[test]
   fn multiple_inserts_of_different_characters() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('A');
     field.insert('T');
     field.insert('Z');
@@ -190,21 +204,21 @@ mod tests {
 
   #[test]
   fn contains_test_true() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('D');
     assert!(field.contains('D'));
   }
 
   #[test]
   fn contains_test_false() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('D');
     assert!(!field.contains('C'));
   }
 
   #[test]
   fn test_remove() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('A');
     field.insert('T');
     field.insert('Z');
@@ -226,7 +240,7 @@ mod tests {
 
   #[test]
   fn iter_test() {
-    let mut field = Field::new();
+    let mut field = Field::new_empty();
     field.insert('A');
     field.insert('T');
     field.insert('Z');

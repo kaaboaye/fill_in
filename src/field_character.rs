@@ -31,7 +31,8 @@ impl Into<char> for FieldCharacter {
 
 impl Display for FieldCharacter {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-    write!(f, "{}", self.value as char)
+    let character: char = (*self).into();
+    write!(f, "{}", character)
   }
 }
 
