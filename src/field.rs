@@ -2,7 +2,7 @@ use crate::field_character::FieldCharacter;
 use std::fmt::Debug;
 use std::fmt::Display;
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Field {
   data: u32,
 }
@@ -57,50 +57,69 @@ impl Field {
     self.data &= !(1 << character.into().value);
   }
 
-  pub fn next(&self) -> u8 {
-    self.data.trailing_zeros() as u8
+  pub fn next(&self) -> FieldCharacter {
+    let value = self.data.trailing_zeros() as u8;
+    FieldCharacter { value }
+  }
+
+  pub fn iter(&self) -> FieldIter {
+    FieldIter { field: *self }
   }
 }
 
-// pub struct FieldIter {
-//   field: Field,
-// }
+pub struct FieldIter {
+  field: Field,
+}
 
-// impl Iterator for FieldIter {
-//   type Item = u16;
+impl Iterator for FieldIter {
+  type Item = FieldCharacter;
 
-//   fn next(&mut self) -> std::option::Option<<Self as std::iter::Iterator>::Item> {
-//     if self.field.len() == 0 {
-//       return None;
-//     }
+  fn next(&mut self) -> std::option::Option<<Self as std::iter::Iterator>::Item> {
+    if self.field.len() <= 0 {
+      return None;
+    }
 
-//     let next_value = self.field.next();
-//     self.field.remove(next_value);
-//     Some(next_value)
-//   }
-// }
+    let next_value = self.field.next();
+    self.field.remove(next_value);
+    Some(next_value)
+  }
+}
 
-// impl Debug for Field {
-//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-//     let values: Vec<_> = self.iter().collect();
+impl IntoIterator for Field {
+  type Item = FieldCharacter;
+  type IntoIter = FieldIter;
 
-//     if values.len() == 1 {
-//       write!(f, "{}", values[0])
-//     } else {
-//       write!(f, "{:?}", &values)
-//     }
-//   }
-// }
+  fn into_iter(self) -> Self::IntoIter {
+    self.iter()
+  }
+}
 
-// impl Display for Field {
-//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-//     write!(f, "{:?}", &self)
-//   }
-// }
+impl Debug for Field {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    if self.len() == -1 {
+      return write!(f, "#");
+    }
+
+    let values: Vec<_> = self.iter().collect();
+
+    if values.len() == 1 {
+      write!(f, "{}", values[0])
+    } else {
+      write!(f, "{:?}", &values)
+    }
+  }
+}
+
+impl Display for Field {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    write!(f, "{:?}", &self)
+  }
+}
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::collections::hash_set::HashSet;
 
   #[test]
   fn blocker_constructor() {
@@ -203,5 +222,22 @@ mod tests {
 
     field.remove('Z');
     assert_eq!(field.len(), 0);
+  }
+
+  #[test]
+  fn iter_test() {
+    let mut field = Field::new();
+    field.insert('A');
+    field.insert('T');
+    field.insert('Z');
+
+    let set = field
+      .into_iter()
+      .map(|fc| -> char { fc.into() })
+      .collect::<HashSet<char>>();
+
+    assert!(set.contains(&'A'));
+    assert!(set.contains(&'T'));
+    assert!(set.contains(&'Z'));
   }
 }

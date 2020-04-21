@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::fmt::Display;
 
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct FieldCharacter {
   pub value: u8,
 }
@@ -19,6 +20,12 @@ impl From<u8> for FieldCharacter {
     debug_assert!(character as u32 <= ('Z' as u32 - 'A' as u32));
 
     FieldCharacter { value: character }
+  }
+}
+
+impl Into<char> for FieldCharacter {
+  fn into(self) -> char {
+    (self.value + 'A' as u8) as char
   }
 }
 
