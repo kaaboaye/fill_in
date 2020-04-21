@@ -1,6 +1,6 @@
 use crate::field::Field;
-use crate::field_character::FieldCharacter;
 use nalgebra::DMatrix;
+use nalgebra::RowDVector;
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -19,17 +19,15 @@ impl FromStr for Crossword {
     let mut raw = String::from(raw);
     raw.make_ascii_uppercase();
 
-    // freeze
-    let raw = raw;
-
-    let cols = raw.lines().next().unwrap().len();
-
-    let fields: Vec<Field> = raw
+    let rows: Vec<RowDVector<Field>> = raw
       .lines()
-      .flat_map(|line| line.chars().map(|c| -> Field { c.into() }))
+      .map(|line| {
+        let vec = line.chars().map(|c| -> Field { c.into() }).collect();
+        RowDVector::<Field>::from_vec(vec)
+      })
       .collect();
 
-    let board = DMatrix::<Field>::from_vec(fields.len() / cols, cols, fields);
+    let board = DMatrix::<Field>::from_rows(rows.as_slice());
 
     Ok(Crossword { board })
   }
