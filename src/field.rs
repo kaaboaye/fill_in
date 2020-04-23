@@ -70,7 +70,7 @@ impl Field {
 impl From<char> for Field {
   fn from(character: char) -> Self {
     match character {
-      '_' => Field::new_any_character(),
+      '_' => Field::new_empty(),
       '#' => Field::new_blocker(),
       character => {
         let mut field = Field::new_empty();

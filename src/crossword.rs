@@ -14,11 +14,6 @@ impl FromStr for Crossword {
   type Err = Box<dyn std::error::Error>;
 
   fn from_str(raw: &str) -> std::result::Result<Self, <Self as std::str::FromStr>::Err> {
-    dbg!(raw);
-
-    let mut raw = String::from(raw);
-    raw.make_ascii_uppercase();
-
     let rows: Vec<RowDVector<Field>> = raw
       .lines()
       .map(|line| {
