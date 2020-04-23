@@ -1,4 +1,4 @@
-use crate::field_character::FieldCharacter;
+use crate::character::Character;
 use std::fmt::Debug;
 use std::fmt::Display;
 
@@ -38,28 +38,28 @@ impl Field {
 
   pub fn insert<T>(&mut self, character: T)
   where
-    T: Into<FieldCharacter>,
+    T: Into<Character>,
   {
     self.data |= 1 << character.into().value;
   }
 
   pub fn contains<T>(&self, character: T) -> bool
   where
-    T: Into<FieldCharacter>,
+    T: Into<Character>,
   {
     (self.data & (1 << character.into().value)) != 0
   }
 
   pub fn remove<T>(&mut self, character: T)
   where
-    T: Into<FieldCharacter>,
+    T: Into<Character>,
   {
     self.data &= !(1 << character.into().value);
   }
 
-  pub fn next(&self) -> FieldCharacter {
+  pub fn next(&self) -> Character {
     let value = self.data.trailing_zeros() as u8;
-    FieldCharacter { value }
+    Character { value }
   }
 
   pub fn iter(&self) -> FieldIter {
@@ -87,7 +87,7 @@ pub struct FieldIter {
 }
 
 impl Iterator for FieldIter {
-  type Item = FieldCharacter;
+  type Item = Character;
 
   fn next(&mut self) -> std::option::Option<<Self as std::iter::Iterator>::Item> {
     if self.field.len() <= 0 {
@@ -101,7 +101,7 @@ impl Iterator for FieldIter {
 }
 
 impl IntoIterator for Field {
-  type Item = FieldCharacter;
+  type Item = Character;
   type IntoIter = FieldIter;
 
   fn into_iter(self) -> Self::IntoIter {

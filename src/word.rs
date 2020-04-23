@@ -1,10 +1,11 @@
-use crate::field_character::FieldCharacter;
+use crate::character::Character;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::ops::Index;
 
 #[derive(Clone)]
 pub struct Word {
-  data: Vec<FieldCharacter>,
+  data: Vec<Character>,
 }
 
 impl Word {
@@ -29,5 +30,13 @@ impl Display for Word {
 impl Debug for Word {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
     write!(f, "{}", self)
+  }
+}
+
+impl Index<usize> for Word {
+  type Output = Character;
+
+  fn index(&self, idx: usize) -> &<Self as std::ops::Index<usize>>::Output {
+    &self.data[idx]
   }
 }

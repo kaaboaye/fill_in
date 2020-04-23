@@ -1,8 +1,8 @@
 extern crate nalgebra;
 
+mod character;
 mod crossword;
 mod field;
-mod field_character;
 mod word;
 mod words;
 
@@ -16,16 +16,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let puzzle_number = std::env::args().nth(1).unwrap();
 
     let puzzle = read_file(format!("assets/puzzle{}", puzzle_number))?;
-    let crossword = Crossword::from_str(puzzle.as_str())?;
+    let mut crossword = Crossword::from_str(puzzle.as_str())?;
 
-    print!("Crossword{}", crossword);
+    print!("Crossword\n{}", &crossword);
 
     let words = read_file(format!("assets/words{}", puzzle_number))?;
-    let words = Words::new(words);
+    let mut words = Words::new(words);
 
-    print!("Words\n{:?}", words);
+    println!("Words\n{:?}", &words);
 
-    println!("Hello, world!");
+    crossword.solve(&mut words);
+
+    print!("Solved crossword\n{}", &crossword);
 
     Ok(())
 }

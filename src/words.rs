@@ -36,6 +36,20 @@ impl Words {
 
     Words { data: words }
   }
+
+  pub fn words_with_length(&self, length: usize) -> Option<&[Word]> {
+    if self.data.len() < length {
+      return None;
+    }
+
+    let bucket = &self.data[length];
+
+    if bucket.len() == 0 {
+      return None;
+    }
+
+    Some(bucket.as_slice())
+  }
 }
 
 impl Debug for Words {
