@@ -200,16 +200,16 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
       let mut board_candidate = board.clone();
 
       match check_constraints(&mut board_candidate, word_fields) {
+        Ok(()) => {
+          (*board) = board_candidate;
+          skip_fields = 0;
+          skip_words_map[word_size] = 0;
+        }
         Err(()) => {
           skip_words_map[word_size] += 1;
           let field_candidate = &mut word_fields[candidate_idx];
           words.return_word(field_candidate.selected_word.as_ref().unwrap().clone());
           field_candidate.selected_word = None;
-        }
-        Ok(()) => {
-          (*board) = board_candidate;
-          skip_fields = 0;
-          skip_words_map[word_size] = 0;
         }
       }
 
