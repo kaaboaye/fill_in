@@ -201,7 +201,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
     if let Some((candidate_idx, field_candidate)) = field_candidate {
       let word_size = field_candidate.len();
 
-      let selected_word = words
+      let could_not_select_word = words
         .words_with_length_mut(word_size)
         .and_then(|possible_words| {
           let word_candidate = possible_words
@@ -211,12 +211,13 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
             .clone();
 
           possible_words.remove(&word_candidate);
-          field_candidate.selected_word = Some(word_candidate.clone());
+          field_candidate.selected_word = Some(word_candidate);
 
-          Some(word_candidate)
-        });
+          Some(())
+        })
+        .is_none();
 
-      if let None = selected_word {
+      if could_not_select_word {
         skip_fields += 1;
         skip_words_map[word_size] = 0;
         continue;
