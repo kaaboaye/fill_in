@@ -14,10 +14,6 @@ impl Field {
     }
   }
 
-  pub fn is_empty(&self) -> bool {
-    (*self) == Field::new_empty()
-  }
-
   pub fn new_blocker() -> Field {
     Field { data: 0 }
   }
@@ -68,10 +64,6 @@ impl Field {
 
   pub fn iter(&self) -> FieldIter {
     FieldIter { field: *self }
-  }
-
-  pub fn is_intersection(&self, cpm: &Field) -> bool {
-    self.iter().any(|character| cpm.contains(character))
   }
 }
 
