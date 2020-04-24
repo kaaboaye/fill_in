@@ -4,6 +4,7 @@ mod character;
 mod crossword;
 mod dense_map;
 mod field;
+mod metrics;
 mod word;
 mod words;
 
@@ -26,9 +27,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Words\n{:?}", &words);
 
-    crossword.solve(&mut words);
+    let metrics = crossword.solve(&mut words);
 
-    print!("Solved crossword\n{}", &crossword);
+    print!("Solved crossword\n{}\n{:?}\n", &crossword, metrics);
 
     Ok(())
 }

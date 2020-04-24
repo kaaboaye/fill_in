@@ -1,5 +1,6 @@
 use crate::dense_map::DenseMap;
 use crate::field::Field;
+use crate::metrics::Metrics;
 use crate::word::Word;
 use crate::words::Words;
 use nalgebra::DMatrix;
@@ -28,13 +29,13 @@ pub struct Crossword {
 }
 
 impl Crossword {
-  pub fn solve(&mut self, words: &mut Words) {
+  pub fn solve(&mut self, words: &mut Words) -> Metrics {
     let word_fields = extract_word_fields(&self.board);
     let mut word_fields = filter_out_fields_without_possible_words(word_fields, words);
 
     fill_board_with_all_possibilities(&mut self.board, &word_fields, words);
 
-    solve(&mut self.board, &mut word_fields, words);
+    solve(&mut self.board, &mut word_fields, words)
   }
 }
 
@@ -161,11 +162,14 @@ fn fill_board_with_all_possibilities(
   }
 }
 
-fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words) {
+fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words) -> Metrics {
   let mut skip_fields = 0usize;
   let mut skip_words_map = DenseMap::<usize>::new_with_max_key(words.longest_size(), || 0);
+  let mut metrics = Metrics::new(words.longest_size());
 
   loop {
+    metrics.iterations += 1;
+
     let field_candidate = word_fields
       .iter_mut()
       .enumerate()
@@ -187,6 +191,8 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
           possible_words.remove(&word_candidate);
           field_candidate.selected_word = Some(word_candidate);
 
+          metrics.words_selected += 1;
+
           Some(())
         })
         .is_none();
@@ -194,6 +200,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
       if could_not_select_word {
         skip_fields += 1;
         skip_words_map[word_size] = 0;
+        metrics.fields_skipped += 1;
         continue;
       }
 
@@ -206,6 +213,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
           skip_words_map[word_size] = 0;
         }
         Err(()) => {
+          metrics.words_skipped[word_size] += 1;
           skip_words_map[word_size] += 1;
           let field_candidate = &mut word_fields[candidate_idx];
           words.return_word(field_candidate.selected_word.as_ref().unwrap().clone());
@@ -225,7 +233,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
 
     assert_eq!(puzzle_not_solved, false);
 
-    return;
+    return metrics;
   }
 }
 
