@@ -7,6 +7,20 @@ use nalgebra::RowDVector;
 use std::fmt::Display;
 use std::str::FromStr;
 
+#[derive(Clone, Debug)]
+struct WordField {
+  position: (usize, usize),
+  size: (usize, usize),
+  selected_word: Option<Word>,
+}
+
+impl WordField {
+  fn len(&self) -> usize {
+    let (x, y) = self.size;
+    x + y - 1
+  }
+}
+
 type Board = DMatrix<Field>;
 
 pub struct Crossword {
@@ -22,13 +36,6 @@ impl Crossword {
 
     solve(&mut self.board, &mut word_fields, words);
   }
-}
-
-#[derive(Clone, Debug)]
-struct WordField {
-  position: (usize, usize),
-  size: (usize, usize),
-  selected_word: Option<Word>,
 }
 
 fn extract_word_fields(board: &Board) -> Vec<WordField> {
@@ -127,11 +134,7 @@ fn filter_out_fields_without_possible_words(
 ) -> Vec<WordField> {
   word_fields
     .iter()
-    .filter(|word_field| {
-      words
-        .words_with_length(len_from_size(&word_field.size))
-        .is_some()
-    })
+    .filter(|word_field| words.words_with_length(word_field.len()).is_some())
     .cloned()
     .collect()
 }
@@ -144,16 +147,15 @@ fn restrict_board(
   loop {
     let before_restrictions = board.clone();
 
-    for WordField {
-      position,
-      size,
-      selected_word: _,
-    } in word_fields.iter()
-    {
+    for word_field in word_fields.iter() {
       words
-        .words_with_length(len_from_size(size))
+        .words_with_length(word_field.len())
         .map(|possible_words| {
-          for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
+          for (idx, field) in board
+            .slice_mut(word_field.position, word_field.size)
+            .iter_mut()
+            .enumerate()
+          {
             for possible_word in possible_words {
               field.insert(possible_word[idx]);
             }
@@ -197,7 +199,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
       .find(|(_idx, field)| field.selected_word.is_none());
 
     if let Some((candidate_idx, field_candidate)) = field_candidate {
-      let word_size = len_from_size(&field_candidate.size);
+      let word_size = field_candidate.len();
 
       let selected_word = words
         .words_with_length_mut(word_size)
@@ -250,10 +252,6 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
 
     return;
   }
-}
-
-fn len_from_size((x, y): &(usize, usize)) -> usize {
-  *x + *y - 1
 }
 
 impl FromStr for Crossword {
