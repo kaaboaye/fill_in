@@ -32,7 +32,7 @@ impl Crossword {
     let word_fields = extract_word_fields(&self.board);
     let mut word_fields = filter_out_fields_without_possible_words(word_fields, words);
 
-    restrict_board(&mut self.board, &word_fields, words).unwrap();
+    fill_board_with_all_possibilities(&mut self.board, &word_fields, words);
 
     solve(&mut self.board, &mut word_fields, words);
   }
@@ -139,51 +139,25 @@ fn filter_out_fields_without_possible_words(
     .collect()
 }
 
-fn restrict_board(
+fn fill_board_with_all_possibilities(
   board: &mut Board,
   word_fields: &Vec<WordField>,
   words: &Words,
-) -> Result<(), ()> {
-  loop {
-    let before_restrictions = board.clone();
-
-    for word_field in word_fields.iter() {
-      words
-        .words_with_length(word_field.len())
-        .map(|possible_words| {
-          for (idx, field) in board
-            .slice_mut(word_field.position, word_field.size)
-            .iter_mut()
-            .enumerate()
-          {
-            for possible_word in possible_words {
-              field.insert(possible_word[idx]);
-            }
+) {
+  for word_field in word_fields.iter() {
+    words
+      .words_with_length(word_field.len())
+      .map(|possible_words| {
+        for (idx, field) in board
+          .slice_mut(word_field.position, word_field.size)
+          .iter_mut()
+          .enumerate()
+        {
+          for possible_word in possible_words {
+            field.insert(possible_word[idx]);
           }
-        });
-    }
-
-    for WordField {
-      position,
-      size,
-      selected_word,
-    } in word_fields.iter().filter(|f| f.selected_word.is_some())
-    {
-      let selected_word = selected_word.as_ref().unwrap();
-
-      for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
-        if field.contains(selected_word[idx]) {
-          (*field) = Field::new_empty();
-          field.insert(selected_word[idx])
-        } else {
-          return Err(());
         }
-      }
-    }
-
-    if before_restrictions == (*board) {
-      return Ok(());
-    }
+      });
   }
 }
 
@@ -225,7 +199,7 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
 
       let mut board_candidate = board.clone();
 
-      match restrict_board(&mut board_candidate, word_fields, words) {
+      match check_constraints(&mut board_candidate, word_fields) {
         Err(()) => {
           skip_words_map[word_size] += 1;
           let field_candidate = &mut word_fields[candidate_idx];
@@ -252,6 +226,34 @@ fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words)
     assert_eq!(puzzle_not_solved, false);
 
     return;
+  }
+}
+
+fn check_constraints(board: &mut Board, word_fields: &Vec<WordField>) -> Result<(), ()> {
+  loop {
+    let before_restrictions = board.clone();
+
+    for WordField {
+      position,
+      size,
+      selected_word,
+    } in word_fields.iter().filter(|f| f.selected_word.is_some())
+    {
+      let selected_word = selected_word.as_ref().unwrap();
+
+      for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
+        if field.contains(selected_word[idx]) {
+          (*field) = Field::new_empty();
+          field.insert(selected_word[idx])
+        } else {
+          return Err(());
+        }
+      }
+    }
+
+    if before_restrictions == (*board) {
+      return Ok(());
+    }
   }
 }
 
