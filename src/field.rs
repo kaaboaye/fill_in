@@ -14,6 +14,10 @@ impl Field {
     }
   }
 
+  pub fn is_empty(&self) -> bool {
+    (*self) == Field::new_empty()
+  }
+
   pub fn new_blocker() -> Field {
     Field { data: 0 }
   }
@@ -65,12 +69,16 @@ impl Field {
   pub fn iter(&self) -> FieldIter {
     FieldIter { field: *self }
   }
+
+  pub fn is_intersection(&self, cpm: &Field) -> bool {
+    self.iter().any(|character| cpm.contains(character))
+  }
 }
 
 impl From<char> for Field {
   fn from(character: char) -> Self {
     match character {
-      '_' => Field::new_empty(),
+      '_' => Field::new_any_character(),
       '#' => Field::new_blocker(),
       character => {
         let mut field = Field::new_empty();
@@ -115,11 +123,11 @@ impl Debug for Field {
       -1 => write!(f, "#"),
       0 => write!(f, "∅"),
       1 => write!(f, "{}", self.next()),
-      26 => write!(f, "_"),
-      _ => {
-        let values: Vec<_> = self.iter().collect();
-        write!(f, "{:?}", &values)
-      }
+      _ => write!(f, "_"),
+      // _ => {
+      //   let values: Vec<_> = self.iter().collect();
+      //   write!(f, "{:?}", &values)
+      // }
     }
   }
 }

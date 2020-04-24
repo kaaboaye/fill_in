@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::ops::Index;
 
-#[derive(Clone)]
+#[derive(Clone, Hash, Ord, PartialOrd)]
 pub struct Word {
   data: Vec<Character>,
 }
@@ -14,6 +14,10 @@ impl Word {
     let data = string.chars().map(|c| c.into()).collect();
 
     Word { data }
+  }
+
+  pub fn len(&self) -> usize {
+    self.data.len()
   }
 }
 
@@ -40,3 +44,11 @@ impl Index<usize> for Word {
     &self.data[idx]
   }
 }
+
+impl PartialEq for Word {
+  fn eq(&self, other: &Self) -> bool {
+    self.data == other.data
+  }
+}
+
+impl Eq for Word {}

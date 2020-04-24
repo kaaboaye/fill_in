@@ -1,4 +1,6 @@
+use crate::dense_map::DenseMap;
 use crate::word::Word;
+use std::collections::BTreeSet;
 use std::fmt::Debug;
 
 #[derive(Clone)]
@@ -11,12 +13,12 @@ pub struct Words {
   /// 1 - a
   /// 2 - by, at
   /// 3 - cat, the, etc
-  data: Vec<Vec<Word>>,
+  data: DenseMap<BTreeSet<Word>>,
 }
 
 impl Words {
   pub fn new(string: String) -> Words {
-    let mut words: Vec<Vec<Word>> = Vec::new();
+    let mut words: DenseMap<BTreeSet<Word>> = DenseMap::new();
 
     string
       .lines()
@@ -24,20 +26,16 @@ impl Words {
       .collect::<Vec<_>>()
       .iter_mut()
       .for_each(|word| {
-        let word_size = word.len();
+        words.set_max_key(word.len(), BTreeSet::new);
 
-        if word_size + 1 >= words.len() {
-          words.resize_with(word_size + 1, Vec::new);
-        }
-
-        let bucket = &mut words[word_size];
-        bucket.push(Word::new(word));
+        let bucket = &mut words[word.len()];
+        bucket.insert(Word::new(word));
       });
 
     Words { data: words }
   }
 
-  pub fn words_with_length(&self, length: usize) -> Option<&[Word]> {
+  pub fn words_with_length(&self, length: usize) -> Option<&BTreeSet<Word>> {
     if self.data.len() < length {
       return None;
     }
@@ -48,7 +46,30 @@ impl Words {
       return None;
     }
 
-    Some(bucket.as_slice())
+    Some(bucket)
+  }
+
+  pub fn words_with_length_mut(&mut self, length: usize) -> Option<&mut BTreeSet<Word>> {
+    if self.data.len() < length {
+      return None;
+    }
+
+    let bucket = &mut self.data[length];
+
+    if bucket.len() == 0 {
+      return None;
+    }
+
+    Some(bucket)
+  }
+
+  pub fn return_word(&mut self, word: Word) {
+    let bucket = &mut self.data[word.len()];
+    bucket.insert(word);
+  }
+
+  pub fn longest_size(&self) -> usize {
+    self.data.max_key()
   }
 }
 

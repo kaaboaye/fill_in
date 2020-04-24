@@ -1,3 +1,4 @@
+use crate::dense_map::DenseMap;
 use crate::field::Field;
 use crate::word::Word;
 use crate::words::Words;
@@ -17,9 +18,7 @@ impl Crossword {
     let word_fields = extract_word_fields(&self.board);
     let mut word_fields = filter_out_fields_without_possible_words(word_fields, words);
 
-    println!("{:?}", word_fields);
-
-    initialize_board(&mut self.board, &word_fields, words);
+    restrict_board(&mut self.board, &word_fields, words).unwrap();
 
     solve(&mut self.board, &mut word_fields, words);
   }
@@ -137,28 +136,120 @@ fn filter_out_fields_without_possible_words(
     .collect()
 }
 
-fn initialize_board(board: &mut Board, word_fields: &Vec<WordField>, words: &Words) {
-  for WordField {
-    position,
-    size,
-    selected_word: _,
-  } in word_fields.iter()
-  {
-    if let Some(possible_words) = words.words_with_length(len_from_size(size)) {
-      for possible_word in possible_words {
-        for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
-          field.insert(possible_word[idx]);
+fn restrict_board(
+  board: &mut Board,
+  word_fields: &Vec<WordField>,
+  words: &Words,
+) -> Result<(), ()> {
+  loop {
+    let before_restrictions = board.clone();
+
+    for WordField {
+      position,
+      size,
+      selected_word: _,
+    } in word_fields.iter()
+    {
+      words
+        .words_with_length(len_from_size(size))
+        .map(|possible_words| {
+          for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
+            for possible_word in possible_words {
+              field.insert(possible_word[idx]);
+            }
+          }
+        });
+    }
+
+    for WordField {
+      position,
+      size,
+      selected_word,
+    } in word_fields.iter().filter(|f| f.selected_word.is_some())
+    {
+      let selected_word = selected_word.as_ref().unwrap();
+
+      for (idx, field) in board.slice_mut(*position, *size).iter_mut().enumerate() {
+        if field.contains(selected_word[idx]) {
+          (*field) = Field::new_empty();
+          field.insert(selected_word[idx])
+        } else {
+          return Err(());
         }
       }
+    }
+
+    if before_restrictions == (*board) {
+      return Ok(());
     }
   }
 }
 
 fn solve(board: &mut Board, word_fields: &mut Vec<WordField>, words: &mut Words) {
   let mut skip_fields = 0usize;
-  let mut skip_words = 0usize;
+  let mut skip_words_map = DenseMap::<usize>::new_with_max_key(words.longest_size(), || 0);
 
-  loop {}
+  loop {
+    let field_candidate = word_fields
+      .iter_mut()
+      .enumerate()
+      .skip(skip_fields)
+      .find(|(_idx, field)| field.selected_word.is_none());
+
+    if let Some((candidate_idx, field_candidate)) = field_candidate {
+      let word_size = len_from_size(&field_candidate.size);
+
+      let selected_word = words
+        .words_with_length_mut(word_size)
+        .and_then(|possible_words| {
+          let word_candidate = possible_words
+            .iter()
+            .skip(skip_words_map[word_size])
+            .next()?
+            .clone();
+
+          possible_words.remove(&word_candidate);
+          field_candidate.selected_word = Some(word_candidate.clone());
+
+          Some(word_candidate)
+        });
+
+      if let None = selected_word {
+        skip_fields += 1;
+        skip_words_map[word_size] = 0;
+        continue;
+      }
+
+      let mut board_candidate = board.clone();
+
+      match restrict_board(&mut board_candidate, word_fields, words) {
+        Err(()) => {
+          skip_words_map[word_size] += 1;
+          let field_candidate = &mut word_fields[candidate_idx];
+          words.return_word(field_candidate.selected_word.as_ref().unwrap().clone());
+          field_candidate.selected_word = None;
+        }
+        Ok(()) => {
+          (*board) = board_candidate;
+          skip_fields = 0;
+          skip_words_map[word_size] = 0;
+        }
+      }
+
+      continue;
+    }
+
+    let puzzle_not_solved = word_fields.iter().any(|word_field| {
+      board
+        .slice(word_field.position, word_field.size)
+        .iter()
+        .any(|field| field.len() != 1)
+    });
+
+    assert_eq!(puzzle_not_solved, false);
+
+    return;
+  }
 }
 
 fn len_from_size((x, y): &(usize, usize)) -> usize {

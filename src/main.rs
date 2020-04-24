@@ -2,6 +2,7 @@ extern crate nalgebra;
 
 mod character;
 mod crossword;
+mod dense_map;
 mod field;
 mod word;
 mod words;
